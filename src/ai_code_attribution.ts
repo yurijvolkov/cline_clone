@@ -23,10 +23,6 @@ let TIMEOUT: NodeJS.Timeout | undefined = undefined;
 export function setupAiCodeAttribution(context: vscode.ExtensionContext) {
     let activeEditor = vscode.window.activeTextEditor;
 
-    const shadowWorkspace = ShadowWorkspace.getInstance();
-    const workspacePath = shadowWorkspace.getWorkspacePath();
-    const shadowPath = shadowWorkspace.getShadowPath();
-
     function triggerUpdateAiCodeAttribution(throttle: boolean) {
         if (!AI_CODE_ATTTRIBUTION_ENABLED) {
             if (activeEditor) {
@@ -42,9 +38,9 @@ export function setupAiCodeAttribution(context: vscode.ExtensionContext) {
         }
 
         if (throttle) {
-            TIMEOUT = setTimeout(() => updateDecorations(activeEditor, workspacePath, shadowPath), 500);
+            TIMEOUT = setTimeout(() => updateDecorations(activeEditor), 500);
         } else {
-            updateDecorations(activeEditor, workspacePath, shadowPath);
+            updateDecorations(activeEditor);
         }
     }
 
@@ -69,7 +65,7 @@ export function setupAiCodeAttribution(context: vscode.ExtensionContext) {
     )
     context.subscriptions.push(
         vscode.commands.registerCommand("cline.refreshAiCodeAttribution", async() => {
-            await updateDecorations(activeEditor, workspacePath, shadowPath);
+            await updateDecorations(activeEditor);
         }),
     )
     context.subscriptions.push(
@@ -79,15 +75,19 @@ export function setupAiCodeAttribution(context: vscode.ExtensionContext) {
     )
     context.subscriptions.push(
         vscode.commands.registerCommand("cline.manualSync", async() => {
-            await ShadowWorkspace.getInstance(workspacePath).sync("Human", false);
+            await ShadowWorkspace.getInstance().sync("Human", false);
         }),
     )
 }
 
-async function updateDecorations(activeEditor: vscode.TextEditor | undefined, workspacePath: string, shadowPath: string) {
+async function updateDecorations(activeEditor: vscode.TextEditor | undefined) {
     if (!activeEditor) {
         return;
     }
+
+    const shadowWorkspace = ShadowWorkspace.getInstance();
+    const workspacePath = shadowWorkspace.getWorkspacePath();
+    const shadowPath = shadowWorkspace.getShadowPath();
 
     // Sync the shadow workspace
     await ShadowWorkspace.getInstance(workspacePath).sync("Human", false);
