@@ -13,17 +13,16 @@ def run(command: str, cwd: Path):
     return subprocess.run(command, shell=True, check=True, cwd=str(cwd), capture_output=True, text=True)
 
 
-def shadow_has_changes(shadow_workspace: Path):
-    return len(run('git status --porcelain', shadow_workspace).stdout) > 0
+def shadow_has_changes(workspace_folder: Path, shadow_workspace: Path):
+    return len(run(f'git --git-dir={shadow_workspace}/.git status --porcelain', workspace_folder).stdout) > 0
 
 
 def sync(workspace_folder: Path, shadow_workspace: Path):
-    run(f'rsync -a --exclude .git {str(workspace_folder)}/ {str(shadow_workspace)}', workspace_folder)
-    if shadow_has_changes(shadow_workspace):
-        run('git add -A', shadow_workspace)
+    if shadow_has_changes(workspace_folder, shadow_workspace):
+        run(f'git --git-dir={shadow_workspace}/.git add -A', workspace_folder)
         run(
-            'git commit --author "Human <human@example.com>" -m "Human <human@example.com>"',
-            shadow_workspace
+            f'git --git-dir={shadow_workspace}/.git commit --author "Human <human@example.com>" -m "Human <human@example.com>"',
+            workspace_folder
         )
 
 def parse_git_diff(diff_text):
@@ -92,12 +91,12 @@ def parse_git_diff(diff_text):
     return chunks
 
 
-def get_ai_footprint(chunks: list[dict], shadow_workspace: Path):
+def get_ai_footprint(chunks: list[dict], workspace_folder: Path, shadow_workspace: Path):
     # Get the ai footprint from the chunks
     ai_footprint = defaultdict(list)
 
     for chunk in chunks:
-        shadow_file_blame = run(f"git blame {chunk['filename']}", shadow_workspace).stdout 
+        shadow_file_blame = run(f"git --git-dir={shadow_workspace}/.git blame {chunk['filename']}", workspace_folder).stdout
 
         content_lines = chunk['content'].splitlines()[1:]
         line_i = chunk['plus_start_number']
@@ -137,7 +136,7 @@ def ai_vsc(dry_run: bool, message: str, verbose: bool):
     chunks = parse_git_diff(staged_diff)
     
     # Get the ai footprint
-    ai_footprint = get_ai_footprint(chunks, shadow_workspace)
+    ai_footprint = get_ai_footprint(chunks, workspace_folder, shadow_workspace)
     if verbose:
         print(f"AI footprint: {json.dumps(ai_footprint, indent=4)}")
 

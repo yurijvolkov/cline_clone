@@ -431,8 +431,8 @@ export function activate(context: vscode.ExtensionContext) {
 		throw new Error("No workspace folder found");
 	}
 	// Initialize the shadow workspace
-	ShadowWorkspace.getInstance(workspaceFolder).sync("Human", true);
-	const shadowPath = ShadowWorkspace.getInstance().getShadowPath();
+	const shadow_workspace = ShadowWorkspace.getInstance(workspaceFolder)
+	const shadowPath = shadow_workspace.getShadowPath();
 	
 	// To share with ai-vsc.py
 	fs.writeFileSync('/tmp/shadowPath', shadowPath);
@@ -440,6 +440,7 @@ export function activate(context: vscode.ExtensionContext) {
 	fs.writeFileSync('/tmp/workspaceFolder', workspaceFolder);
 	console.log(`Workspace folder: ${workspaceFolder}`);
 
+	shadow_workspace.sync("Human", true);
 	setupAiCodeAttribution(workspaceFolder, shadowPath, context);
 	
 	return createClineAPI(outputChannel, sidebarWebview.controller)

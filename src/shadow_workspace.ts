@@ -31,24 +31,23 @@ export class ShadowWorkspace {
   }
 
   public async sync(author: Author, isInitialSync: boolean = false): Promise<void> {
-    await runCommand(`rsync -a --exclude .git ${this.workspacePath}/ ${this.shadowPath}/`);
     if (isInitialSync) {
         await runCommand(`git init`, this.shadowPath);
     }
 
     if (await this.shadowHasChanges()) {
-        await runCommand(`git add -A`, this.shadowPath);
+        await runCommand(`git --git-dir=${this.shadowPath}/.git add -A`, this.workspacePath);
         
         let authorString = author === "Human" ? "Human <human@example.com>" : "AI <ai@example.com>";
         if (isInitialSync) {
             authorString = "Init <init@example.com>";
         }
-        await runCommand(`git commit --author "${authorString}" -m "Sync from ${authorString}"`, this.shadowPath);
+        await runCommand(`git --git-dir=${this.shadowPath}/.git commit --author "${authorString}" -m "Sync from ${authorString}"`, this.workspacePath);
     }
   }
 
   public async shadowHasChanges(): Promise<boolean> {
-    const response = await runCommand(`git status --porcelain`, this.shadowPath);
+    const response = await runCommand(`git --git-dir=${this.shadowPath}/.git status --porcelain`, this.workspacePath);
     return response.length > 0;
   }
 

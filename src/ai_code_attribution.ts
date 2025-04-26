@@ -23,9 +23,6 @@ let TIMEOUT: NodeJS.Timeout | undefined = undefined;
 
 export function setupAiCodeAttribution(workspacePath: string, shadowPath: string, context: vscode.ExtensionContext) {
     let activeEditor = vscode.window.activeTextEditor;
-    if (!activeEditor) {
-        return;
-    }
 
     function triggerUpdateAiCodeAttribution(throttle: boolean) {
         if (!AI_CODE_ATTTRIBUTION_ENABLED) {
@@ -84,8 +81,8 @@ async function updateDecorations(activeEditor: vscode.TextEditor | undefined, wo
     if (!workspacePath) { throw Error("empty folder"); }
     const fileName = path.relative(workspacePath, activeEditor.document.fileName);
     
-    const shadowBlame = (await runCommand(`git blame ${fileName}`, shadowPath)).trim(); 
-    const workspaceBlame = (await runCommand(`git blame ${fileName}`, workspacePath)).trim(); 
+    const shadowBlame = (await runCommand(`git --git-dir=${shadowPath}/.git blame ${fileName}`, workspacePath)).trim();
+    const workspaceBlame = (await runCommand(`git blame ${fileName}`, workspacePath)).trim();
 
     // Accumulate decorations
     const humanDecorations: vscode.DecorationOptions[] = [];
@@ -106,7 +103,7 @@ async function updateDecorations(activeEditor: vscode.TextEditor | undefined, wo
                 let notes = null;
                 try{
                     notes = await runCommand(`git notes show ${workspaceCommitHash}`, workspacePath);
-                    NOTES_CACHE[workspaceCommitHash] = JSON.parse(notes.replace(/(\s*)([^"'\s:]+)(\s*):(\s*)/g, '$1"$2"$3:$4'));
+                    NOTES_CACHE[workspaceCommitHash] = JSON.parse(notes);
                 } catch(error) {
                     // Command throws an error, when notes are absent
                     NOTES_CACHE[workspaceCommitHash] = null;
