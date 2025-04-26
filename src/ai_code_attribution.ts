@@ -17,12 +17,15 @@ const AiWrittenCodeDecorationType = vscode.window.createTextEditorDecorationType
 });
 
 type Note = Record<string, number[]>;
-const NOTES_CACHE: Record<string, Note | null> = {};
 let AI_CODE_ATTTRIBUTION_ENABLED = false;
 let TIMEOUT: NodeJS.Timeout | undefined = undefined;
 
-export function setupAiCodeAttribution(workspacePath: string, shadowPath: string, context: vscode.ExtensionContext) {
+export function setupAiCodeAttribution(context: vscode.ExtensionContext) {
     let activeEditor = vscode.window.activeTextEditor;
+
+    const shadowWorkspace = ShadowWorkspace.getInstance();
+    const workspacePath = shadowWorkspace.getWorkspacePath();
+    const shadowPath = shadowWorkspace.getShadowPath();
 
     function triggerUpdateAiCodeAttribution(throttle: boolean) {
         if (!AI_CODE_ATTTRIBUTION_ENABLED) {
@@ -69,6 +72,16 @@ export function setupAiCodeAttribution(workspacePath: string, shadowPath: string
             await updateDecorations(activeEditor, workspacePath, shadowPath);
         }),
     )
+    context.subscriptions.push(
+        vscode.commands.registerCommand("cline.resetShadowPath", async() => {
+            ShadowWorkspace.getInstance().resetShadow();
+        }),
+    )
+    context.subscriptions.push(
+        vscode.commands.registerCommand("cline.manualSync", async() => {
+            await ShadowWorkspace.getInstance(workspacePath).sync("Human", false);
+        }),
+    )
 }
 
 async function updateDecorations(activeEditor: vscode.TextEditor | undefined, workspacePath: string, shadowPath: string) {
@@ -88,6 +101,8 @@ async function updateDecorations(activeEditor: vscode.TextEditor | undefined, wo
     const humanDecorations: vscode.DecorationOptions[] = [];
     const aiDecorations: vscode.DecorationOptions[] = [];
 
+    const notes_cache: Record<string, Note | null> = {};
+
     for (let i = 0; i < shadowBlame.split("\n").length; i++) {
         const shadowBlameLine = shadowBlame.split("\n")[i];         
         const shadowAuthor = getAuthor(shadowBlameLine);
@@ -99,18 +114,18 @@ async function updateDecorations(activeEditor: vscode.TextEditor | undefined, wo
             const workspaceBlameLine = workspaceBlame.split("\n")[i];
             const workspaceCommitHash = getCommitHash(workspaceBlameLine);
 
-            if (!(workspaceCommitHash in NOTES_CACHE)) {
+            if (!(workspaceCommitHash in notes_cache)) {
                 let notes = null;
                 try{
                     notes = await runCommand(`git notes show ${workspaceCommitHash}`, workspacePath);
-                    NOTES_CACHE[workspaceCommitHash] = JSON.parse(notes);
+                    notes_cache[workspaceCommitHash] = JSON.parse(notes);
                 } catch(error) {
                     // Command throws an error, when notes are absent
-                    NOTES_CACHE[workspaceCommitHash] = null;
+                    notes_cache[workspaceCommitHash] = null;
                 }
             }
 
-            const commitNotes = NOTES_CACHE[workspaceCommitHash];
+            const commitNotes = notes_cache[workspaceCommitHash];
             if (commitNotes && fileName in commitNotes && commitNotes[fileName].includes(i + 1)) {
                 aiDecorations.push({ range: new vscode.Range(i, 0, i, 0) });
             } else {
@@ -118,6 +133,7 @@ async function updateDecorations(activeEditor: vscode.TextEditor | undefined, wo
             }
         }
     }
+    
 
     activeEditor.setDecorations(HumanWrittenCodeDecorationType, humanDecorations);
     activeEditor.setDecorations(AiWrittenCodeDecorationType, aiDecorations);

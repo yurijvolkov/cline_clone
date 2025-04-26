@@ -129,6 +129,16 @@
 				"command": "cline.refreshAiCodeAttribution",
 				"title": "Refresh AI Code Attribution",
 				"category": "Cline"
+			},
+			{
+				"command": "cline.resetShadowPath",
+				"title": "Reset Shadow workspace",
+				"category": "Cline"
+			},
+			{
+				"command": "cline.manualSync",
+				"title": "Manually Sync Shadow workspace",
+				"category": "Cline"
 			}
 		],
 		"keybindings": [

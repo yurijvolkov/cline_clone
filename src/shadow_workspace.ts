@@ -11,27 +11,42 @@ export class ShadowWorkspace {
   private static instance: ShadowWorkspace | undefined = undefined;
   private workspacePath: string;
   private shadowPath: string;
+  private context: vscode.ExtensionContext;
 
   public getShadowPath(): string {
     return this.shadowPath;
   }
 
-  public static getInstance(workspacePath?: string): ShadowWorkspace {
+  public getWorkspacePath(): string {
+    return this.workspacePath;
+  }
+
+  public static getInstance(workspacePath?: string, context?: vscode.ExtensionContext): ShadowWorkspace {
     if (!ShadowWorkspace.instance ) {
       if (!workspacePath) {
         throw new Error("Workspace path is required");
       }
-      ShadowWorkspace.instance = new ShadowWorkspace(workspacePath);
+      if (!context) {
+        throw new Error("Context is required");
+      }
+
+      ShadowWorkspace.instance = new ShadowWorkspace(workspacePath, context);
     }
     return ShadowWorkspace.instance;
   }
   
-  constructor(workspacePath: string) {
+  constructor(workspacePath: string, context: vscode.ExtensionContext) {
     this.workspacePath = workspacePath;
-    this.shadowPath = createTmpDir();
+    this.context = context;
+    
+    if (!context.workspaceState.get('shadowPath')) {
+      context.workspaceState.update('shadowPath', createTmpDir());
+    }
+    this.shadowPath = context.workspaceState.get('shadowPath') as string;
   }
 
   public async sync(author: Author, isInitialSync: boolean = false): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'cline.showAiAttributionButton', false);
     if (isInitialSync) {
         await runCommand(`git init`, this.shadowPath);
     }
@@ -43,10 +58,19 @@ export class ShadowWorkspace {
         if (isInitialSync) {
             authorString = "Init <init@example.com>";
         }
-        await runCommand(`git --git-dir=${this.shadowPath}/.git commit --author "${authorString}" -m "Sync from ${authorString}"`, this.workspacePath);
+        await runCommand(
+          `git --git-dir=${this.shadowPath}/.git commit --author "${authorString}" -m "Sync from ${authorString}"`,
+          this.workspacePath
+        );
     }
 
     await vscode.commands.executeCommand('setContext', 'cline.showAiAttributionButton', true);
+  }
+
+  public async resetShadow() {
+    this.shadowPath = createTmpDir();
+    this.context.workspaceState.update('shadowPath', this.shadowPath);
+    this.sync("Init", true);
   }
 
   public async shadowHasChanges(): Promise<boolean> {
@@ -64,10 +88,14 @@ function createTmpDir(): string {
   const uniqueName = `shadow_workspace_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
   const fullPath = path.join(tmpDir, uniqueName);
   fs.mkdirSync(fullPath, { recursive: true });
+
+  // To share with `ai-vsc.py`
+  fs.writeFileSync('/tmp/shadowPath', fullPath);
+
   return fullPath;
 }
 
-export function runCommand(command: string, cwd?: string): Promise<string> {
+export async function runCommand(command: string, cwd?: string): Promise<string> {
     return new Promise((resolve, reject) => {
         exec(command, { cwd, maxBuffer: 10 * 1024 * 1024  }, (error, stdout, stderr) => {
           if (error) {

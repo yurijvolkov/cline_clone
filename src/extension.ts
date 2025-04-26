@@ -12,7 +12,7 @@ import { telemetryService } from "./services/telemetry/TelemetryService"
 import { WebviewProvider } from "./core/webview"
 import { ErrorService } from "./services/error/ErrorService"
 import { initializeTestMode, cleanupTestMode } from "./services/test/TestMode"
-import { runCommand, ShadowWorkspace } from "./shadow_workspace"
+import { ShadowWorkspace } from "./shadow_workspace"
 import * as fs from 'fs';
 import path from "path"
 import { setupAiCodeAttribution } from "./ai_code_attribution"
@@ -432,17 +432,11 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
 	// Initialize the shadow workspace
-	const shadow_workspace = ShadowWorkspace.getInstance(workspaceFolder)
+	const shadow_workspace = ShadowWorkspace.getInstance(workspaceFolder, context)
 	const shadowPath = shadow_workspace.getShadowPath();
 	
-	// To share with ai-vsc.py
-	fs.writeFileSync('/tmp/shadowPath', shadowPath);
-	console.log(`Shadow workspace: ${shadowPath}`);
-	fs.writeFileSync('/tmp/workspaceFolder', workspaceFolder);
-	console.log(`Workspace folder: ${workspaceFolder}`);
-
 	shadow_workspace.sync("Human", true);
-	setupAiCodeAttribution(workspaceFolder, shadowPath, context);
+	setupAiCodeAttribution(context);
 	
 	return createClineAPI(outputChannel, sidebarWebview.controller)
 }
