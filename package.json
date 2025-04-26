@@ -122,7 +122,8 @@
 			{
 				"command": "cline.toggleAiCodeAttribution",
 				"title": "Toggle AI Code Attribution",
-				"category": "Cline"
+				"category": "Cline",
+				"icon": "$(circuit-board)"
 			},
 			{
 				"command": "cline.refreshAiCodeAttribution",
@@ -174,6 +175,11 @@
 				}
 			],
 			"editor/title": [
+				{
+					"command": "cline.toggleAiCodeAttribution",
+					"group": "navigation",
+					"when": "cline.showAiAttributionButton"
+				},
 				{
 					"command": "cline.plusButtonClicked",
 					"group": "navigation@1",

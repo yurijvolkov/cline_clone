@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import * as vscode from "vscode"
 
 import { exec } from 'child_process';
 
@@ -44,6 +45,8 @@ export class ShadowWorkspace {
         }
         await runCommand(`git --git-dir=${this.shadowPath}/.git commit --author "${authorString}" -m "Sync from ${authorString}"`, this.workspacePath);
     }
+
+    await vscode.commands.executeCommand('setContext', 'cline.showAiAttributionButton', true);
   }
 
   public async shadowHasChanges(): Promise<boolean> {

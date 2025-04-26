@@ -430,6 +430,7 @@ export function activate(context: vscode.ExtensionContext) {
 	if (!workspaceFolder) {
 		throw new Error("No workspace folder found");
 	}
+
 	// Initialize the shadow workspace
 	const shadow_workspace = ShadowWorkspace.getInstance(workspaceFolder)
 	const shadowPath = shadow_workspace.getShadowPath();
