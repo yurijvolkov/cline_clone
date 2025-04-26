@@ -12,6 +12,10 @@ import { telemetryService } from "./services/telemetry/TelemetryService"
 import { WebviewProvider } from "./core/webview"
 import { ErrorService } from "./services/error/ErrorService"
 import { initializeTestMode, cleanupTestMode } from "./services/test/TestMode"
+import { ShadowWorkspace } from "./shadow_workspace"
+import * as fs from 'fs';
+import path from "path"
+import { setupAiCodeAttribution } from "./ai_code_attribution"
 
 /*
 Built using https://github.com/microsoft/vscode-webview-ui-toolkit
@@ -422,6 +426,18 @@ export function activate(context: vscode.ExtensionContext) {
 		}),
 	)
 
+	const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+	if (!workspaceFolder) {
+		throw new Error("No workspace folder found");
+	}
+
+	// Initialize the shadow workspace
+	const shadow_workspace = ShadowWorkspace.getInstance(workspaceFolder, context)
+	const shadowPath = shadow_workspace.getShadowPath();
+	
+	shadow_workspace.sync("Human", true);
+	setupAiCodeAttribution(context);
+	
 	return createClineAPI(outputChannel, sidebarWebview.controller)
 }
 

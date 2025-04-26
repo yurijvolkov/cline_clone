@@ -118,6 +118,27 @@
 				"command": "cline.focusChatInput",
 				"title": "Jump to Chat Input",
 				"category": "Cline"
+			},
+			{
+				"command": "cline.toggleAiCodeAttribution",
+				"title": "Toggle AI Code Attribution",
+				"category": "Cline",
+				"icon": "$(circuit-board)"
+			},
+			{
+				"command": "cline.refreshAiCodeAttribution",
+				"title": "Refresh AI Code Attribution",
+				"category": "Cline"
+			},
+			{
+				"command": "cline.resetShadowPath",
+				"title": "Reset Shadow workspace",
+				"category": "Cline"
+			},
+			{
+				"command": "cline.manualSync",
+				"title": "Manually Sync Shadow workspace",
+				"category": "Cline"
 			}
 		],
 		"keybindings": [
@@ -164,6 +185,11 @@
 				}
 			],
 			"editor/title": [
+				{
+					"command": "cline.toggleAiCodeAttribution",
+					"group": "navigation",
+					"when": "cline.showAiAttributionButton"
+				},
 				{
 					"command": "cline.plusButtonClicked",
 					"group": "navigation@1",
