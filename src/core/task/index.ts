@@ -92,6 +92,7 @@ import { parseSlashCommands } from "@core/slash-commands"
 import WorkspaceTracker from "@integrations/workspace/WorkspaceTracker"
 import { McpHub } from "@services/mcp/McpHub"
 import { isInTestMode } from "../../services/test/TestMode"
+import { ShadowWorkspace } from "@/shadow_workspace"
 
 export const cwd =
 	vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) ?? path.join(os.homedir(), "Desktop") // may or may not exist but fs checking existence would immediately ask for permission which would be bad UX, need to come up with a better solution
@@ -2038,9 +2039,11 @@ export class Task {
 								// Mark the file as edited by Cline to prevent false "recently modified" warnings
 								this.fileContextTracker.markFileAsEditedByCline(relPath)
 
+								await ShadowWorkspace.getInstance().sync("Human", false);
 								const { newProblemsMessage, userEdits, autoFormattingEdits, finalContent } =
 									await this.diffViewProvider.saveChanges()
 								this.didEditFile = true // used to determine if we should wait for busy terminal to update before sending api request
+								await ShadowWorkspace.getInstance().sync("AI", false);
 
 								// Track file edit operation
 								await this.fileContextTracker.trackFileContext(relPath, "cline_edited")

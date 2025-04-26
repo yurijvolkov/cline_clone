@@ -118,6 +118,16 @@
 				"command": "cline.focusChatInput",
 				"title": "Jump to Chat Input",
 				"category": "Cline"
+			},
+			{
+				"command": "cline.toggleAiCodeAttribution",
+				"title": "Toggle AI Code Attribution",
+				"category": "Cline"
+			},
+			{
+				"command": "cline.refreshAiCodeAttribution",
+				"title": "Refresh AI Code Attribution",
+				"category": "Cline"
 			}
 		],
 		"keybindings": [
